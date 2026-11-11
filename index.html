@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coopy — Video Editor</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="theme-color" content="#050507">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+</head>
+<body data-workspace="edit">
+
+<div id="app">
+  <!-- ===== Top bar ===== -->
+  <header id="topbar">
+    <div class="brand">
+      <img src="assets/logo.png" alt="" width="24" height="24">
+      <span>Coopy</span>
+    </div>
+    <nav class="menu" id="menu">
+      <button data-menu="file">File</button>
+      <button data-menu="edit">Edit</button>
+      <button data-menu="view">View</button>
+      <button data-menu="help">Help</button>
+    </nav>
+    <div class="project-title" id="projectTitle" title="Click to rename" tabindex="0">Untitled Project</div>
+    <div class="top-actions">
+      <span class="status-pill" id="saveStatus">Not saved</span>
+      <button class="btn" id="btnSettings">Project Settings</button>
+      <button class="btn btn-primary" id="btnExport">Export…</button>
+    </div>
+  </header>
+
+  <!-- ===== Workspace tabs ===== -->
+  <nav id="workspaceTabs" role="tablist">
+    <button role="tab" data-ws="media">Media</button>
+    <button role="tab" data-ws="edit" class="active">Edit</button>
+    <button role="tab" data-ws="color">Color</button>
+    <button role="tab" data-ws="audio">Audio</button>
+    <button role="tab" data-ws="deliver">Deliver</button>
+    <span class="spacer"></span>
+    <button class="btn-ghost" id="btnResetLayout" title="Reset panel sizes">Reset layout</button>
+  </nav>
+
+  <!-- ===== Main grid ===== -->
+  <main id="workspace">
+    <div id="upper">
+      <!-- Left: media pool / effects -->
+      <section class="panel" id="panelLeft" data-panel="left">
+        <div class="panel-tabs" data-group="left">
+          <button class="active" data-tab="media">Media Pool</button>
+          <button data-tab="effects">Effects</button>
+        </div>
+        <div class="panel-body">
+          <div class="tab-page active" data-page="media">
+            <div class="toolbar">
+              <button class="btn btn-sm btn-primary" id="btnImport" title="Import video, audio or images">Import</button>
+              <button class="btn btn-sm" id="btnNewBin" title="New bin inside the selected bin">New Bin</button>
+              <button class="btn btn-sm" id="btnAddToTimeline" title="Add selected media to the timeline at the playhead" disabled>Add to Timeline</button>
+              <button class="btn btn-sm" id="btnRemoveMedia" title="Remove selected media from project (Delete)" disabled>Remove</button>
+            </div>
+            <div class="toolbar">
+              <input type="search" id="mediaSearch" placeholder="Search media…">
+              <select id="mediaFilter" title="Filter by type">
+                <option value="all">All</option>
+                <option value="video">Video</option>
+                <option value="audio">Audio</option>
+                <option value="image">Images</option>
+              </select>
+            </div>
+            <div class="bin-tree" id="binTree"></div>
+            <div class="media-grid" id="mediaGrid"></div>
+            <div class="empty-state" id="mediaEmpty">
+              <p><strong>No media here</strong></p>
+              <p class="muted">Click Import or drop video, audio and image files onto this panel.</p>
+            </div>
+            <input type="file" id="fileInput" multiple accept="video/*,audio/*,image/*" hidden>
+            <div class="drop-overlay" id="dropOverlay" hidden>Drop to import</div>
+          </div>
+          <div class="tab-page" data-page="effects">
+            <div class="empty-state">
+              <p><strong>Select a clip to apply looks</strong></p>
+              
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="splitter v" data-split="left" role="separator" aria-orientation="vertical"></div>
+
+      <!-- Center: preview -->
+      <section class="panel" id="panelPreview" data-panel="preview">
+        <div class="panel-head">
+          <div class="seg" id="modeSeg">
+            <button data-mode="timeline" class="active">Timeline</button>
+            <button data-mode="source" disabled title="Double-click a media item to load it here">Source</button>
+          </div>
+          <span class="muted" id="sourceName"></span>
+          <span class="spacer"></span>
+          <select id="aspectSelect" title="Aspect ratio">
+            <option value="16:9">16:9</option>
+            <option value="9:16">9:16</option>
+            <option value="1:1">1:1</option>
+            <option value="4:3">4:3</option>
+            <option value="21:9">21:9</option>
+          </select>
+        </div>
+        <div class="viewer-wrap">
+          <div class="viewer" id="viewer">
+            <canvas id="previewCanvas" width="1280" height="720"></canvas>
+            <div class="viewer-hint" id="viewerHint">No clip at playhead</div>
+          </div>
+        </div>
+        <div class="transport">
+          <span class="timecode" id="timecode">00:00:00:00</span>
+          <div class="transport-btns">
+            <button class="icon-btn" id="btnToStart" title="Go to start (Home)">⏮</button>
+            <button class="icon-btn" id="btnStepBack" title="Previous frame (←)">◂</button>
+            <button class="icon-btn play" id="btnPlay" title="Play / Pause (Space)">▶</button>
+            <button class="icon-btn" id="btnStepFwd" title="Next frame (→)">▸</button>
+            <button class="icon-btn" id="btnToEnd" title="Go to end (End)">⏭</button>
+          </div>
+          <select id="speedSelect" title="Playback speed">
+            <option value="0.25">0.25×</option>
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2">2×</option>
+          </select>
+          <button class="icon-btn" id="btnFullscreen" title="Fullscreen (F)">⛶</button>
+        </div>
+      </section>
+
+      <div class="splitter v" data-split="right" role="separator" aria-orientation="vertical"></div>
+
+      <!-- Right: inspector -->
+      <section class="panel" id="panelRight" data-panel="right">
+        <div class="panel-tabs" data-group="right">
+          <button class="active" data-tab="inspector">Inspector</button>
+          <button data-tab="color">Color</button>
+        </div>
+        <div class="panel-body">
+          <div class="tab-page active" data-page="inspector">
+            <div class="empty-state">
+              <p><strong>Nothing selected</strong></p>
+              <p class="muted">Select a clip on the timeline to edit its properties.</p>
+            </div>
+          </div>
+          <div class="tab-page" data-page="color">
+            <div class="empty-state">
+              <p><strong>Color grading</strong></p>
+              <p class="muted">Arrives in Stage 7.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="splitter h" data-split="timeline" role="separator" aria-orientation="horizontal"></div>
+
+    <!-- Bottom: timeline -->
+    <section class="panel" id="panelTimeline" data-panel="timeline">
+      <div class="tl-toolbar">
+        <button class="icon-btn" id="btnUndo" title="Undo (Ctrl+Z)">↶</button>
+        <button class="icon-btn" id="btnRedo" title="Redo (Ctrl+Shift+Z)">↷</button>
+        <span class="sep"></span>
+        <button class="icon-btn tool on" id="btnToolSelect" title="Selection tool (V): select, move and trim clips">Select</button>
+        <button class="icon-btn tool" id="btnToolBlade" title="Blade tool (B): click a clip to cut it there">Blade</button>
+        <span class="sep"></span>
+        <button class="icon-btn" id="btnSplit" title="Split at playhead (S)">Split</button>
+        <button class="icon-btn" id="btnDuplicate" title="Duplicate selected clip (Ctrl+D)" disabled>Duplicate</button>
+        <button class="icon-btn" id="btnDeleteClip" title="Delete selected clip (Delete). Shift+Delete closes the gap" disabled>Delete</button>
+        <span class="sep"></span>
+        <button class="icon-btn" id="btnAddVideoTrack" title="Add video track">+V</button>
+        <button class="icon-btn" id="btnAddAudioTrack" title="Add audio track">+A</button>
+        <span class="sep"></span>
+        <label class="toggle" title="Snapping"><input type="checkbox" id="chkSnap" checked><span>Snap</span></label>
+        <span class="spacer"></span>
+        <button class="icon-btn" id="btnZoomOut" title="Zoom out (−)">−</button>
+        <input type="range" id="zoomSlider" min="0" max="100" value="40" title="Timeline zoom">
+        <button class="icon-btn" id="btnZoomIn" title="Zoom in (+)">+</button>
+        <button class="btn btn-sm" id="btnZoomFit" title="Fit to window">Fit</button>
+      </div>
+      <div class="tl-main">
+        <div class="tl-headers" id="tlHeaders">
+          <div class="tl-header-corner"></div>
+          <div id="tlHeaderList"></div>
+        </div>
+        <div class="tl-scroll" id="tlScroll">
+          <div class="tl-content" id="tlContent">
+            <canvas id="tlRuler" height="28"></canvas>
+            <div id="tlTracks"></div>
+            <div class="playhead" id="playhead"><div class="playhead-handle"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="statusbar">
+    <span id="sbInfo">Ready</span>
+    <span class="spacer"></span>
+    <span id="sbProject">1920×1080 · 24 fps</span>
+  </footer>
+</div>
+
+<!-- Menu popover -->
+<div id="menuPop" class="popover" hidden></div>
+
+<!-- Toasts -->
+<div id="toasts" aria-live="polite"></div>
+
+<!-- Modal host -->
+<div id="modalHost" class="modal-host" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><span id="modalTitle"></span><button class="icon-btn" id="modalClose" title="Close">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
