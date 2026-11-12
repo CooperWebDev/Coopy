@@ -2,226 +2,126 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Coopy — Video Editor</title>
-<link rel="icon" type="image/png" href="assets/favicon.png">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-<meta name="theme-color" content="#050507">
-<link rel="stylesheet" href="css/theme.css">
-<link rel="stylesheet" href="css/layout.css">
-<link rel="stylesheet" href="css/components.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coopy</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark;--bg:#080a08;--fg:#e6ece6;--panel:#101410;--bd:#26322a;--mut:#8a9a8c;--ac:#2f8f4e;--ac2:#1f6b38}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:minmax(300px,400px) 1fr;gap:16px;padding:16px;width:100%;min-height:100vh;align-items:start}
+.side{max-height:calc(100vh - 32px);overflow-y:auto}
+.pvw{position:sticky;top:16px;height:calc(100vh - 32px)}
+.pvw .pg{height:100%;min-height:0;overflow-y:auto;justify-content:center}
+@media(max-width:800px){.app{grid-template-columns:1fr}.side{max-height:none}.pvw{position:static;height:auto;min-height:100vh}.pvw .pg{min-height:100vh}}
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:16px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:18px 0 8px}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 3px}
+input[type=text],input[type=url],select{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg)}
+input[type=color]{width:44px;height:34px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);padding:2px}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.row>input[type=color]{flex:0 0 44px}
+.lk{display:grid;grid-template-columns:110px 1fr 34px;gap:6px;margin-bottom:6px}
+.btn{padding:9px 14px;border:0;border-radius:9px;background:var(--ac);color:#fff;font-weight:600;cursor:pointer}.btn:hover{background:var(--ac2)}
+.btn.sec{background:transparent;color:var(--fg);border:1px solid var(--bd)}
+.x{border:1px solid var(--bd);background:transparent;border-radius:8px;cursor:pointer}
+.out{margin-top:14px;padding:12px;border:1px dashed var(--ac);border-radius:10px;word-break:break-all}
+.out b{display:block;margin-bottom:6px}
+.err{color:#d96a6a;font-size:13px;margin-top:8px}
+/* the generated page */
+.pg{min-height:100vh;width:100%;display:flex;flex-direction:column;align-items:center;padding:40px 16px;color:#fff;position:relative;overflow:hidden;border-radius:14px}
+.pg.full{min-height:100vh;border-radius:0}
+.pg::before,.pg::after{content:"";position:absolute;width:90px;height:90px;border:6px solid rgba(74,160,100,.55);pointer-events:none}
+.pg::before{top:18px;right:18px;border-left:0;border-bottom:0}.pg::after{bottom:18px;left:18px;border-right:0;border-top:0}
+.av{width:120px;height:120px;border-radius:50%;border:4px solid #3fa763;background:rgba(63,167,99,.14) center/cover;display:grid;place-items:center;font-size:44px;font-weight:700}
+.pg h3{font-size:24px;margin:16px 0 4px}.pg p{margin:0 0 22px;opacity:.9}
+.ls{width:100%;max-width:430px;display:flex;flex-direction:column;gap:14px}
+.l{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-radius:10px;color:#fff;text-decoration:none;font-weight:600;border:1px solid rgba(120,200,145,.25);box-shadow:0 4px 14px rgba(0,0,0,.45);transition:transform .15s}
+.l:hover{transform:translateY(-2px) scale(1.01)}
+.ft{margin-top:26px;font-size:13px;opacity:.85}
+.brand{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));font-size:12px;background:#0c120d;border:1px solid #26322a;color:#cfe3d3;padding:5px 10px;border-radius:99px;text-decoration:none;z-index:5}
+</style>
 </head>
-<body data-workspace="edit">
-
-<div id="app">
-  <!-- ===== Top bar ===== -->
-  <header id="topbar">
-    <div class="brand">
-      <img src="assets/logo.png" alt="" width="24" height="24">
-      <span>Coopy</span>
-    </div>
-    <nav class="menu" id="menu">
-      <button data-menu="file">File</button>
-      <button data-menu="edit">Edit</button>
-      <button data-menu="view">View</button>
-      <button data-menu="help">Help</button>
-    </nav>
-    <div class="project-title" id="projectTitle" title="Click to rename" tabindex="0">Untitled Project</div>
-    <div class="top-actions">
-      <span class="status-pill" id="saveStatus">Not saved</span>
-      <button class="btn" id="btnSettings">Project Settings</button>
-      <button class="btn btn-primary" id="btnExport">Export…</button>
-    </div>
-  </header>
-
-  <!-- ===== Workspace tabs ===== -->
-  <nav id="workspaceTabs" role="tablist">
-    <button role="tab" data-ws="media">Media</button>
-    <button role="tab" data-ws="edit" class="active">Edit</button>
-    <button role="tab" data-ws="color">Color</button>
-    <button role="tab" data-ws="audio">Audio</button>
-    <button role="tab" data-ws="deliver">Deliver</button>
-    <span class="spacer"></span>
-    <button class="btn-ghost" id="btnResetLayout" title="Reset panel sizes">Reset layout</button>
-  </nav>
-
-  <!-- ===== Main grid ===== -->
-  <main id="workspace">
-    <div id="upper">
-      <!-- Left: media pool / effects -->
-      <section class="panel" id="panelLeft" data-panel="left">
-        <div class="panel-tabs" data-group="left">
-          <button class="active" data-tab="media">Media Pool</button>
-          <button data-tab="effects">Effects</button>
-        </div>
-        <div class="panel-body">
-          <div class="tab-page active" data-page="media">
-            <div class="toolbar">
-              <button class="btn btn-sm btn-primary" id="btnImport" title="Import video, audio or images">Import</button>
-              <button class="btn btn-sm" id="btnNewBin" title="New bin inside the selected bin">New Bin</button>
-              <button class="btn btn-sm" id="btnAddToTimeline" title="Add selected media to the timeline at the playhead" disabled>Add to Timeline</button>
-              <button class="btn btn-sm" id="btnRemoveMedia" title="Remove selected media from project (Delete)" disabled>Remove</button>
-            </div>
-            <div class="toolbar">
-              <input type="search" id="mediaSearch" placeholder="Search media…">
-              <select id="mediaFilter" title="Filter by type">
-                <option value="all">All</option>
-                <option value="video">Video</option>
-                <option value="audio">Audio</option>
-                <option value="image">Images</option>
-              </select>
-            </div>
-            <div class="bin-tree" id="binTree"></div>
-            <div class="media-grid" id="mediaGrid"></div>
-            <div class="empty-state" id="mediaEmpty">
-              <p><strong>No media here</strong></p>
-              <p class="muted">Click Import or drop video, audio and image files onto this panel.</p>
-            </div>
-            <input type="file" id="fileInput" multiple accept="video/*,audio/*,image/*" hidden>
-            <div class="drop-overlay" id="dropOverlay" hidden>Drop to import</div>
-          </div>
-          <div class="tab-page" data-page="effects">
-            <div class="empty-state">
-              <p><strong>Select a clip to apply looks</strong></p>
-              
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div class="splitter v" data-split="left" role="separator" aria-orientation="vertical"></div>
-
-      <!-- Center: preview -->
-      <section class="panel" id="panelPreview" data-panel="preview">
-        <div class="panel-head">
-          <div class="seg" id="modeSeg">
-            <button data-mode="timeline" class="active">Timeline</button>
-            <button data-mode="source" disabled title="Double-click a media item to load it here">Source</button>
-          </div>
-          <span class="muted" id="sourceName"></span>
-          <span class="spacer"></span>
-          <select id="aspectSelect" title="Aspect ratio">
-            <option value="16:9">16:9</option>
-            <option value="9:16">9:16</option>
-            <option value="1:1">1:1</option>
-            <option value="4:3">4:3</option>
-            <option value="21:9">21:9</option>
-          </select>
-        </div>
-        <div class="viewer-wrap">
-          <div class="viewer" id="viewer">
-            <canvas id="previewCanvas" width="1280" height="720"></canvas>
-            <div class="viewer-hint" id="viewerHint">No clip at playhead</div>
-          </div>
-        </div>
-        <div class="transport">
-          <span class="timecode" id="timecode">00:00:00:00</span>
-          <div class="transport-btns">
-            <button class="icon-btn" id="btnToStart" title="Go to start (Home)">⏮</button>
-            <button class="icon-btn" id="btnStepBack" title="Previous frame (←)">◂</button>
-            <button class="icon-btn play" id="btnPlay" title="Play / Pause (Space)">▶</button>
-            <button class="icon-btn" id="btnStepFwd" title="Next frame (→)">▸</button>
-            <button class="icon-btn" id="btnToEnd" title="Go to end (End)">⏭</button>
-          </div>
-          <select id="speedSelect" title="Playback speed">
-            <option value="0.25">0.25×</option>
-            <option value="0.5">0.5×</option>
-            <option value="1" selected>1×</option>
-            <option value="1.5">1.5×</option>
-            <option value="2">2×</option>
-          </select>
-          <button class="icon-btn" id="btnFullscreen" title="Fullscreen (F)">⛶</button>
-        </div>
-      </section>
-
-      <div class="splitter v" data-split="right" role="separator" aria-orientation="vertical"></div>
-
-      <!-- Right: inspector -->
-      <section class="panel" id="panelRight" data-panel="right">
-        <div class="panel-tabs" data-group="right">
-          <button class="active" data-tab="inspector">Inspector</button>
-          <button data-tab="color">Color</button>
-        </div>
-        <div class="panel-body">
-          <div class="tab-page active" data-page="inspector">
-            <div class="empty-state">
-              <p><strong>Nothing selected</strong></p>
-              <p class="muted">Select a clip on the timeline to edit its properties.</p>
-            </div>
-          </div>
-          <div class="tab-page" data-page="color">
-            <div class="empty-state">
-              <p><strong>Color grading</strong></p>
-              <p class="muted">Arrives in Stage 7.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <div class="splitter h" data-split="timeline" role="separator" aria-orientation="horizontal"></div>
-
-    <!-- Bottom: timeline -->
-    <section class="panel" id="panelTimeline" data-panel="timeline">
-      <div class="tl-toolbar">
-        <button class="icon-btn" id="btnUndo" title="Undo (Ctrl+Z)">↶</button>
-        <button class="icon-btn" id="btnRedo" title="Redo (Ctrl+Shift+Z)">↷</button>
-        <span class="sep"></span>
-        <button class="icon-btn tool on" id="btnToolSelect" title="Selection tool (V): select, move and trim clips">Select</button>
-        <button class="icon-btn tool" id="btnToolBlade" title="Blade tool (B): click a clip to cut it there">Blade</button>
-        <span class="sep"></span>
-        <button class="icon-btn" id="btnSplit" title="Split at playhead (S)">Split</button>
-        <button class="icon-btn" id="btnDuplicate" title="Duplicate selected clip (Ctrl+D)" disabled>Duplicate</button>
-        <button class="icon-btn" id="btnDeleteClip" title="Delete selected clip (Delete). Shift+Delete closes the gap" disabled>Delete</button>
-        <span class="sep"></span>
-        <button class="icon-btn" id="btnAddVideoTrack" title="Add video track">+V</button>
-        <button class="icon-btn" id="btnAddAudioTrack" title="Add audio track">+A</button>
-        <span class="sep"></span>
-        <label class="toggle" title="Snapping"><input type="checkbox" id="chkSnap" checked><span>Snap</span></label>
-        <span class="spacer"></span>
-        <button class="icon-btn" id="btnZoomOut" title="Zoom out (−)">−</button>
-        <input type="range" id="zoomSlider" min="0" max="100" value="40" title="Timeline zoom">
-        <button class="icon-btn" id="btnZoomIn" title="Zoom in (+)">+</button>
-        <button class="btn btn-sm" id="btnZoomFit" title="Fit to window">Fit</button>
-      </div>
-      <div class="tl-main">
-        <div class="tl-headers" id="tlHeaders">
-          <div class="tl-header-corner"></div>
-          <div id="tlHeaderList"></div>
-        </div>
-        <div class="tl-scroll" id="tlScroll">
-          <div class="tl-content" id="tlContent">
-            <canvas id="tlRuler" height="28"></canvas>
-            <div id="tlTracks"></div>
-            <div class="playhead" id="playhead"><div class="playhead-handle"></div></div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer id="statusbar">
-    <span id="sbInfo">Ready</span>
-    <span class="spacer"></span>
-    <span id="sbProject">1920×1080 · 24 fps</span>
-  </footer>
-</div>
-
-<!-- Menu popover -->
-<div id="menuPop" class="popover" hidden></div>
-
-<!-- Toasts -->
-<div id="toasts" aria-live="polite"></div>
-
-<!-- Modal host -->
-<div id="modalHost" class="modal-host" hidden>
-  <div class="modal" role="dialog" aria-modal="true">
-    <div class="modal-head"><span id="modalTitle"></span><button class="icon-btn" id="modalClose" title="Close">✕</button></div>
-    <div class="modal-body" id="modalBody"></div>
-    <div class="modal-foot" id="modalFoot"></div>
-  </div>
-</div>
-
-<script type="module" src="js/main.js"></script>
+<body>
+<div id="root"></div>
+<script>
+var PLAT={
+ twitch:["Follow on Twitch","linear-gradient(90deg,#1f6b38,#14472a)"],
+ tiktok:["Follow on TikTok","linear-gradient(90deg,#0e1410,#1c261f)"],
+ instagram:["Follow on Instagram","linear-gradient(90deg,#2f8f4e,#1f6b38)"],
+ youtube:["Follow on YouTube","linear-gradient(90deg,#256f3e,#164a29)"],
+ snapchat:["Follow on Snapchat","linear-gradient(90deg,#3a9a58,#2a7a43)"],
+ discord:["Join the Discord","linear-gradient(90deg,#1a5a30,#0f3a1e)"],
+ support:["Support me","linear-gradient(90deg,#2b8449,#1b5c31)"],
+ custom:["My link","linear-gradient(90deg,#16301f,#0d1f14)"]
+};
+var root=document.getElementById("root");
+var S={name:"Your Name",tag:"Streamer & Content Creator",avatar:"",c1:"#050705",c2:"#10301a",
+ links:[{p:"twitch",t:"Follow on Twitch",u:""},{p:"tiktok",t:"Follow on TikTok",u:""},{p:"instagram",t:"Follow on Instagram",u:""}]};
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function safeUrl(u){u=String(u||"").trim();if(!u)return"#";if(/^https?:\/\//i.test(u))return u;if(/^[a-z][a-z0-9+.-]*:/i.test(u))return"#";return"https://"+u}
+function pageHtml(d,full){
+ var av=d.avatar&&/^data:image\//.test(d.avatar)?'style="background-image:url('+d.avatar+')"':"";
+ var ls=(d.links||[]).map(function(l){var g=(PLAT[l.p]||PLAT.custom)[1];
+  return '<a class="l" style="background:'+g+'" href="'+esc(safeUrl(l.u))+'" target="_blank" rel="noopener noreferrer"><span>'+esc(l.t||"Link")+'</span><span>&rarr;</span></a>'}).join("");
+ return '<div class="pg'+(full?" full":"")+'" style="background:linear-gradient(160deg,'+esc(d.c1)+','+esc(d.c2)+')">'+
+  '<div class="av" '+av+'>'+(d.avatar?"":esc((d.name||"?").charAt(0).toUpperCase()))+'</div><h3>'+esc(d.name)+'</h3><p>'+esc(d.tag)+'</p><div class="ls">'+ls+'</div>'+
+  '<div class="ft">&copy; '+new Date().getFullYear()+' '+esc(d.name)+'</div></div>';
+}
+function enc(d){return btoa(unescape(encodeURIComponent(JSON.stringify(d)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+function dec(t){t=t.replace(/-/g,"+").replace(/_/g,"/");while(t.length%4)t+="=";return JSON.parse(decodeURIComponent(escape(atob(t))))}
+function clean(d){var hx=/^#[0-9a-f]{6}$/i;
+ return{name:String(d.name||"").slice(0,40),tag:String(d.tag||"").slice(0,80),
+  avatar:/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(d.avatar||"")?d.avatar:"",
+  c1:hx.test(d.c1)?d.c1:"#050705",c2:hx.test(d.c2)?d.c2:"#10301a",
+  links:(Array.isArray(d.links)?d.links:[]).slice(0,12).map(function(l){return{p:PLAT[l.p]?l.p:"custom",t:String(l.t||"").slice(0,60),u:String(l.u||"").slice(0,500)}})}}
+function viewMode(code){
+ try{var d=clean(dec(code));document.title=(d.name||"Page")+" \u00b7 Coopy";
+  root.innerHTML=pageHtml(d,true)+'<a class="brand" href="'+esc(location.href.split("#")[0])+'">Made with Coopy</a>'}
+ catch(e){root.innerHTML='<p style="padding:30px">This link looks broken. <a href="'+esc(location.href.split("#")[0])+'">Create your own</a></p>'}
+}
+function builder(){
+ root.innerHTML='<div class="app"><div class="panel side"><h1>Coopy</h1><div style="color:var(--mut)">Build your link page, then create a shareable link.</div>'+
+ '<h2>Profile</h2><label>Name</label><input type="text" id="n" maxlength="40"><label>Tagline</label><input type="text" id="t" maxlength="80">'+
+ '<label>Profile picture</label><input type="file" id="f" accept="image/*">'+
+ '<h2>Background</h2><div class="row"><input type="color" id="c1"><input type="color" id="c2"><span style="flex:3;color:var(--mut);font-size:13px">Gradient colors</span></div>'+
+ '<h2>Links</h2><div id="ls"></div><button class="btn sec" id="add">+ Add link</button>'+
+ '<div style="margin-top:18px"><button class="btn" id="pub">Create link</button></div><div id="msg"></div></div>'+
+ '<div class="pvw" id="pv"></div></div>';
+ var $=function(i){return document.getElementById(i)};
+ $("n").value=S.name;$("t").value=S.tag;$("c1").value=S.c1;$("c2").value=S.c2;
+ function prev(){$("pv").innerHTML=pageHtml(S,false)}
+ function rows(){
+  $("ls").innerHTML=S.links.map(function(l,i){
+   var opts=Object.keys(PLAT).map(function(k){return '<option value="'+k+'"'+(k===l.p?" selected":"")+'>'+k+'</option>'}).join("");
+   return '<div class="lk"><select data-i="'+i+'" data-k="p">'+opts+'</select><input type="url" placeholder="https://..." data-i="'+i+'" data-k="u" value="'+esc(l.u)+'"><button class="x" data-del="'+i+'">&times;</button>'+
+   '<input type="text" style="grid-column:1/4" placeholder="Button text" data-i="'+i+'" data-k="t" value="'+esc(l.t)+'"></div>'}).join("");
+ }
+ rows();prev();
+ $("n").oninput=function(){S.name=this.value;prev()};$("t").oninput=function(){S.tag=this.value;prev()};
+ $("c1").oninput=function(){S.c1=this.value;prev()};$("c2").oninput=function(){S.c2=this.value;prev()};
+ $("ls").oninput=function(e){var k=e.target.dataset.k;if(!k)return;S.links[+e.target.dataset.i][k]=e.target.value;prev()};
+ $("ls").onchange=function(e){if(e.target.dataset.k==="p"){var l=S.links[+e.target.dataset.i];l.t=PLAT[l.p][0];rows();prev()}};
+ $("ls").onclick=function(e){var d=e.target.dataset.del;if(d!==undefined){S.links.splice(+d,1);rows();prev()}};
+ $("add").onclick=function(){if(S.links.length<12){S.links.push({p:"custom",t:"My link",u:""});rows();prev()}};
+ $("f").onchange=function(){var f=this.files[0];if(!f)return;var im=new Image(),u=URL.createObjectURL(f);
+  im.onload=function(){var c=document.createElement("canvas");c.width=c.height=160;var x=c.getContext("2d"),m=Math.min(im.width,im.height);
+   x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,160,160);S.avatar=c.toDataURL("image/jpeg",.7);URL.revokeObjectURL(u);prev()};im.src=u};
+ $("pub").onclick=function(){
+  var msg=$("msg"),url=location.href.split("#")[0]+"#p="+enc(S);
+  msg.innerHTML='<div class="out"><b>Your page link</b><a href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(url)+'</a>'+
+   '<div style="margin-top:8px" class="row"><button class="btn sec" id="cp">Copy link</button><button class="btn sec" id="dl">Download .html</button></div>'+
+   (url.length>8000?'<div class="err">This link is long (big profile picture). Use Download .html if sharing fails.</div>':'')+'</div>';
+  $("cp").onclick=function(){var b=this;try{navigator.clipboard.writeText(url).then(function(){b.textContent="Copied!"})}catch(e){b.textContent="Select & copy above"}};
+  $("dl").onclick=function(){
+   var css=document.querySelector("style").textContent;
+   var html='<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>'+esc(S.name)+'</title><style>'+css+'</style></head><body>'+pageHtml(clean(S),true)+'</body></html>';
+   var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([html],{type:"text/html"}));a.download="index.html";document.body.appendChild(a);a.click();a.remove()};
+ };
+}
+function route(){var h=location.hash.slice(1);if(h.indexOf("p=")===0)viewMode(h.slice(2));else builder()}
+window.addEventListener("hashchange",route);
+route();
+</script>
 </body>
 </html>
