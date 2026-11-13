@@ -36,6 +36,17 @@ select:disabled{opacity:.4}
 .opts .full{grid-column:1/-1}
 .chk{display:flex;align-items:center;gap:8px;color:var(--tx);font-size:14px}
 .chk input{width:18px;height:18px;accent-color:var(--blue)}
+.sw{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;transition:border-color .2s}
+.sw:hover{border-color:#3d4c8f}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.trk{flex:none;width:46px;height:26px;border-radius:99px;background:#1a2248;border:1px solid var(--line);position:relative;transition:background .2s}
+.trk::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#8a94c4;transition:transform .2s,background .2s}
+.sw input:checked+.trk{background:linear-gradient(135deg,var(--blue),var(--pur))}
+.sw input:checked+.trk::after{transform:translateX(20px);background:#fff}
+.sw input:focus-visible+.trk{outline:2px solid #8fb4ff;outline-offset:2px}
+.swt{font-weight:800;font-style:italic;font-size:17px;display:grid}
+.swt small{font-weight:400;font-style:normal;font-size:13px;color:var(--mut)}
+[hidden]{display:none!important}
 @media(max-width:960px){main{grid-template-columns:1fr}.preview{position:static}}
 @media(max-width:420px){.row,.opts{grid-template-columns:1fr}main{padding:10px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -55,16 +66,18 @@ select:disabled{opacity:.4}
 </div>
 </section>
 <aside class="panel">
+<label class="sw"><input type="checkbox" id="st" role="switch" checked><span class="trk"></span><span class="swt">Standard modes<small>1v1, 2v2, 3v3</small></span></label>
 <div id="pls" class="panel"></div>
+<label class="sw"><input type="checkbox" id="lm" role="switch"><span class="trk"></span><span class="swt">Limited modes<small>4v4, Heatseeker</small></span></label>
+<div id="lmp" class="panel" hidden></div>
+<label class="sw"><input type="checkbox" id="ex" role="switch"><span class="trk"></span><span class="swt">Extra modes<small>Rumble, Snowday, Hoops, Dropshot</small></span></label>
+<div id="exp" class="panel" hidden></div>
 <fieldset>
 <legend>Customize</legend>
 <div class="opts">
 <label>Background<select id="bg"><option value="blue">Blue stadium</option><option value="orange">Orange stadium</option><option value="purple">Purple arena</option><option value="dark">Midnight</option></select></label>
-<label>Theme<select id="th"><option value="rank">Rank colors</option><option value="#3b8bff">Rocket blue</option><option value="#ff8a2a">Boost orange</option><option value="#a56bff">Neon purple</option></select></label>
-<label>Playlists shown<select id="cnt"><option value="3">3</option><option value="2">2</option><option value="1">1</option></select></label>
-<label>Username<input type="text" id="user" maxlength="24" placeholder="Optional"></label>
-<label class="chk"><input type="checkbox" id="tt" checked>Show title</label>
-<label class="chk"><input type="checkbox" id="pn" checked>Show playlist names</label>
+<label>Standard playlists shown<select id="cnt"><option value="3">3</option><option value="2">2</option><option value="1">1</option></select></label>
+<label class="full">Username<input type="text" id="user" maxlength="24" placeholder="Optional"></label>
 </div>
 </fieldset>
 </aside>
@@ -90,18 +103,20 @@ const IMGKEY={gc:'grand_champion',ssl:'super_sonic_legend'};
 
 const RK=[];
 FAM.forEach(f=>{ if(!f.t) RK.push({f,tier:0,label:f.n}); else for(let i=1;i<=3;i++) RK.push({f,tier:i,label:f.n+' '+ROM[i]}); });
-const PL=['1v1','2v2','3v3'], DEF=[['Diamond III',3],['Grand Champion I',2],['Champion III',3]];
+const PL=['1v1','2v2','3v3','Rumble','Snowday','Hoops','Dropshot','4v4','Heatseeker'];
+const SUB=['Duels','Doubles','Standard','','','','','',''];
+const DEF=[['Diamond III',3],['Grand Champion I',2],['Champion III',3],['Diamond I',2],['Champion I',2],['Diamond II',3],['Platinum III',2],['Platinum II',3],['Gold III',2]];
 const $=id=>document.getElementById(id);
 
 // ---------- UI ----------
-const names={'1v1':'Duels','2v2':'Doubles','3v3':'Standard'};
+const grpOf=i=>i<3?'pls':i<7?'exp':'lmp';
+let opts='<option value="-1">Hidden (leave empty)</option>',last='';
+RK.forEach((r,j)=>{ if(r.f.n!==last){ if(last) opts+='</optgroup>'; opts+=`<optgroup label="${r.f.n}">`; last=r.f.n;} opts+=`<option value="${j}">${r.label}</option>`; });
+opts+='</optgroup>';
 PL.forEach((p,i)=>{
  const fs=document.createElement('fieldset');
- let opts='<option value="-1">Hidden (leave empty)</option>',last='';
- RK.forEach((r,j)=>{ if(r.f.n!==last){ if(last) opts+='</optgroup>'; opts+=`<optgroup label="${r.f.n}">`; last=r.f.n;} opts+=`<option value="${j}">${r.label}</option>`; });
- opts+='</optgroup>';
- fs.innerHTML=`<legend>${p} · ${names[p]}</legend><div class="row"><label>Rank<select id="r${i}">${opts}</select></label><label>Division<select id="d${i}">${[1,2,3,4].map(d=>`<option value="${d}">${ROM[d]}</option>`).join('')}</select></label></div>`;
- $('pls').appendChild(fs);
+ fs.innerHTML=`<legend>${p}${SUB[i]?' · '+SUB[i]:''}</legend><div class="row"><label>Rank<select id="r${i}">${opts}</select></label><label>Division<select id="d${i}">${[1,2,3,4].map(d=>`<option value="${d}">${ROM[d]}</option>`).join('')}</select></label></div>`;
+ $(grpOf(i)).appendChild(fs);
  $('r'+i).value=RK.findIndex(r=>r.label===DEF[i][0]); $('d'+i).value=DEF[i][1];
 });
 function syncDiv(){ PL.forEach((_,i)=>{ const v=+$('r'+i).value; $('d'+i).disabled=v<0||!RK[v].tier; }); }
@@ -181,52 +196,57 @@ const im=IMG[(IMGKEY[f.k]||f.k)+(tier?'_'+tier:'')];
 }
 
 // ---------- Cards ----------
-function card(x,i,n,item,o){
- const {r,div}=item,f=r.f,cw=n===1?640:520,ch=n===1?680:640,gap=60,tot=n*cw+(n-1)*gap;
- const left=(1920-tot)/2+i*(cw+gap),top=o.top,cx=left+cw/2;
- const acc=o.theme==='rank'?f.c:o.theme;
+function card(x,g,item){
+ const {left,top,cw,ch}=g,k=ch/640,{r,div}=item,f=r.f,cx=left+cw/2,acc=f.c;
  x.save();
- x.beginPath();x.roundRect(left,top,cw,ch,42);
- const g=x.createLinearGradient(0,top,0,top+ch);g.addColorStop(0,rgba(acc,.2));g.addColorStop(.5,'rgba(8,11,28,.88)');g.addColorStop(1,'rgba(4,6,16,.95)');
- x.fillStyle=g;x.shadowColor=acc;x.shadowBlur=45;x.fill();
+ x.beginPath();x.roundRect(left,top,cw,ch,42*k);
+ const gr=x.createLinearGradient(0,top,0,top+ch);gr.addColorStop(0,rgba(acc,.2));gr.addColorStop(.5,'rgba(8,11,28,.88)');gr.addColorStop(1,'rgba(4,6,16,.95)');
+ x.fillStyle=gr;x.shadowColor=acc;x.shadowBlur=45;x.fill();
  x.shadowBlur=30;x.lineWidth=4;x.strokeStyle=mix(acc,.25);x.stroke();x.shadowBlur=0;
- x.beginPath();x.roundRect(left+10,top+10,cw-20,ch-20,34);x.lineWidth=1.5;x.strokeStyle='rgba(255,255,255,.1)';x.stroke();
+ x.beginPath();x.roundRect(left+10,top+10,cw-20,ch-20,34*k);x.lineWidth=1.5;x.strokeStyle='rgba(255,255,255,.1)';x.stroke();
  x.restore();
- if(o.names){ // playlist tab
-  const tw=300,th=76,ty=top-th/2;x.save();
-  poly(x,[cx-tw/2,ty+th/2,cx-tw/2+34,ty,cx+tw/2-34,ty,cx+tw/2,ty+th/2,cx+tw/2-34,ty+th,cx-tw/2+34,ty+th]);
-  x.fillStyle='#070b1e';x.shadowColor=acc;x.shadowBlur=20;x.fill();x.lineWidth=3;x.strokeStyle=mix(acc,.2);x.stroke();x.restore();
-  txt(x,item.pl,cx,ty+th/2+2,58,'#fff',acc,1);
- }
- const ey=top+ch*.4,es=n===1?150:128;
- const gl=x.createRadialGradient(cx,ey,0,cx,ey,230);gl.addColorStop(0,rgba(acc,.28));gl.addColorStop(1,rgba(acc,0));x.fillStyle=gl;x.fillRect(cx-230,ey-230,460,460);
+ const tw=Math.min(300*k+(item.pl.length>5?50:0),cw-30),th=Math.max(76*k,52),ty=top-th/2,cut=Math.min(34*k+6,th/2);x.save();
+ poly(x,[cx-tw/2,ty+th/2,cx-tw/2+cut,ty,cx+tw/2-cut,ty,cx+tw/2,ty+th/2,cx+tw/2-cut,ty+th,cx-tw/2+cut,ty+th]);
+ x.fillStyle='#070b1e';x.shadowColor=acc;x.shadowBlur=20;x.fill();x.lineWidth=3;x.strokeStyle=mix(acc,.2);x.stroke();x.restore();
+ txt(x,item.pl.toUpperCase(),cx,ty+th/2+2,Math.max(58*k,34),'#fff',acc,1,tw-cut*2-10);
+ const ey=top+ch*.4,es=ch*(g.solo?.22:.2);
+ const gl=x.createRadialGradient(cx,ey,0,cx,ey,230*k);gl.addColorStop(0,rgba(acc,.28));gl.addColorStop(1,rgba(acc,0));x.fillStyle=gl;x.fillRect(cx-230*k,ey-230*k,460*k,460*k);
  emblem(x,f,r.tier,cx,ey,es);
- const hasDiv=!!r.tier;
- txt(x,(f.n+(r.tier?' '+ROM[r.tier]:'')).toUpperCase(),cx,top+ch*(hasDiv?.73:.8),hasDiv?58:64,'#fff',acc,1,cw-70);
+ const hasDiv=!!r.tier,kb=Math.max(k,.7);
+ txt(x,(f.n+(r.tier?' '+ROM[r.tier]:'')).toUpperCase(),cx,top+ch*(hasDiv?.73:.8),Math.max((hasDiv?58:64)*k,36),'#fff',acc,1,cw-50);
  if(hasDiv){
-  txt(x,'DIVISION '+ROM[div],cx,top+ch*.81,26,mix(acc,.5),null,5);
-  const bw=70,bh=16,sg=8,bx=cx-(4*bw+3*sg)/2,by=top+ch*.88;
-  x.fillStyle='rgba(255,255,255,.07)';x.beginPath();x.roundRect(bx-24,by-14,4*bw+3*sg+48,bh+28,16);x.fill();
-  for(let d=0;d<4;d++){const sx=bx+d*(bw+sg);x.save();poly(x,[sx+8,by,sx+bw+8,by,sx+bw,by+bh,sx,by+bh]);
+  txt(x,'DIVISION '+ROM[div],cx,top+ch*.81,Math.max(26*k,19),mix(acc,.5),null,4);
+  const bw=70*kb,bh=16*kb,sg=8*kb,bx=cx-(4*bw+3*sg)/2,by=top+ch*.88;
+  x.fillStyle='rgba(255,255,255,.07)';x.beginPath();x.roundRect(bx-24*kb,by-14*kb,4*bw+3*sg+48*kb,bh+28*kb,16*kb);x.fill();
+  for(let d=0;d<4;d++){const sx=bx+d*(bw+sg);x.save();poly(x,[sx+8*kb,by,sx+bw+8*kb,by,sx+bw,by+bh,sx,by+bh]);
    if(d<div){x.fillStyle=mix(acc,.2);x.shadowColor=acc;x.shadowBlur=16;}else x.fillStyle='rgba(255,255,255,.12)';x.fill();x.restore();}
  }
 }
 
 // ---------- Render ----------
+function rowGeom(n,top,cw,ch,gap,solo){const tot=n*cw+(n-1)*gap,l=(1920-tot)/2;return Array.from({length:n},(_,i)=>({left:l+i*(cw+gap),top,cw,ch,solo}));}
 function render(){
- syncDiv();
+ syncDiv();$('pls').hidden=!$('st').checked;$('cnt').disabled=!$('st').checked;$('exp').hidden=!$('ex').checked;$('lmp').hidden=!$('lm').checked;
  const cv=$('cv'),x=cv.getContext('2d');x.clearRect(0,0,1920,1080);
  drawBg(x,$('bg').value);
- const theme=$('th').value,title=$('tt').checked,names=$('pn').checked,user=$('user').value.trim();
- const items=PL.map((pl,i)=>({pl,v:+$('r'+i).value,div:+$('d'+i).value})).filter(a=>a.v>=0).map(a=>({pl:a.pl,r:RK[a.v],div:a.div})).slice(0,+$('cnt').value);
- if(title){txt(x,'ROCKET LEAGUE',960,105,104,'#fff','#2f7bff',6);}
- const accent=theme==='rank'?'#7fb0ff':theme;
- if(user) txt(x,user.toUpperCase(),960,title?228:150,50,'#fff',accent,6,1400);
- if(!items.length){txt(x,'SELECT A RANK TO START',960,560,60,'#8a94c4',null,4);return;}
- const top=title?(user?340:310):(user?300:260);
- items.forEach((it,i)=>card(x,i,items.length,it,{top:top+(items.length===1?0:20),theme,names}));
+ const user=$('user').value.trim();
+ const all=PL.map((pl,i)=>({pl,i,r:RK[+$('r'+i).value],div:+$('d'+i).value,on:+$('r'+i).value>=0}));
+ const items=[...all.filter(a=>a.i<3&&a.on&&$('st').checked).slice(0,+$('cnt').value),...all.filter(a=>a.i>=7&&a.on&&$('lm').checked),...all.filter(a=>a.i>=3&&a.i<7&&a.on&&$('ex').checked)];
+ txt(x,'ROCKET LEAGUE',960,105,104,'#fff','#2f7bff',6);
+ if(user) txt(x,user.toUpperCase(),960,228,50,'#fff','#7fb0ff',6,1400);
+ const n=items.length;
+ if(!n){txt(x,'SELECT A RANK TO START',960,560,60,'#8a94c4',null,4);return;}
+ let geo;
+ if(n<=5){
+  const top=(user?340:310)+(n>1?20:0),cw=[0,640,520,520,410,340][n],ch=[0,680,640,640,600,560][n],gap=n<=3?60:n===4?40:32;
+  geo=rowGeom(n,top,cw,ch,gap,n===1);
+ }else{
+  const a=Math.ceil(n/2),b=n-a,top=user?330:290,ch=Math.floor((1050-top-48)/2),cw=a===5?340:400,gap=a===5?30:40;
+  geo=[...rowGeom(a,top,cw,ch,gap),...rowGeom(b,top+ch+48,cw,ch,gap)];
+ }
+ items.forEach((it,i)=>card(x,geo[i],it));
 }
-['bg','th','cnt','user','tt','pn'].forEach(id=>$(id).addEventListener('input',render));
+['bg','cnt','user','st','ex','lm'].forEach(id=>$(id).addEventListener('input',render));
 PL.forEach((_,i)=>{$('r'+i).addEventListener('input',render);$('d'+i).addEventListener('input',render);});
 $('gen').onclick=()=>{render();const c=$('cv');c.classList.add('pulse');setTimeout(()=>c.classList.remove('pulse'),700);c.scrollIntoView({behavior:'smooth',block:'nearest'});};
 $('dl').onclick=()=>{render();$('cv').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='rocket-league-ranks.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);},'image/png');};
