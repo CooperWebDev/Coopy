@@ -61,8 +61,7 @@ select:disabled{opacity:.4}
 <section class="preview" aria-label="Preview">
 <canvas id="cv" width="1920" height="1080" role="img" aria-label="Rank showcase preview"></canvas>
 <div class="actions">
-<button class="pri" id="gen">Generate image</button>
-<button class="sec" id="dl">Download PNG</button>
+<button class="pri" id="dl">Download PNG</button>
 </div>
 </section>
 <aside class="panel">
@@ -76,7 +75,6 @@ select:disabled{opacity:.4}
 <legend>Customize</legend>
 <div class="opts">
 <label>Background<select id="bg"><option value="blue">Blue stadium</option><option value="orange">Orange stadium</option><option value="purple">Purple arena</option><option value="dark">Midnight</option></select></label>
-<label>Standard playlists shown<select id="cnt"><option value="3">3</option><option value="2">2</option><option value="1">1</option></select></label>
 <label class="full">Username<input type="text" id="user" maxlength="24" placeholder="Optional"></label>
 </div>
 </fieldset>
@@ -226,12 +224,12 @@ function card(x,g,item){
 // ---------- Render ----------
 function rowGeom(n,top,cw,ch,gap,solo){const tot=n*cw+(n-1)*gap,l=(1920-tot)/2;return Array.from({length:n},(_,i)=>({left:l+i*(cw+gap),top,cw,ch,solo}));}
 function render(){
- syncDiv();$('pls').hidden=!$('st').checked;$('cnt').disabled=!$('st').checked;$('exp').hidden=!$('ex').checked;$('lmp').hidden=!$('lm').checked;
+ syncDiv();$('pls').hidden=!$('st').checked;$('exp').hidden=!$('ex').checked;$('lmp').hidden=!$('lm').checked;
  const cv=$('cv'),x=cv.getContext('2d');x.clearRect(0,0,1920,1080);
  drawBg(x,$('bg').value);
  const user=$('user').value.trim();
  const all=PL.map((pl,i)=>({pl,i,r:RK[+$('r'+i).value],div:+$('d'+i).value,on:+$('r'+i).value>=0}));
- const items=[...all.filter(a=>a.i<3&&a.on&&$('st').checked).slice(0,+$('cnt').value),...all.filter(a=>a.i>=7&&a.on&&$('lm').checked),...all.filter(a=>a.i>=3&&a.i<7&&a.on&&$('ex').checked)];
+ const items=[...all.filter(a=>a.i<3&&a.on&&$('st').checked),...all.filter(a=>a.i>=7&&a.on&&$('lm').checked),...all.filter(a=>a.i>=3&&a.i<7&&a.on&&$('ex').checked)];
  txt(x,'ROCKET LEAGUE',960,105,104,'#fff','#2f7bff',6);
  if(user) txt(x,user.toUpperCase(),960,228,50,'#fff','#7fb0ff',6,1400);
  const n=items.length;
@@ -246,9 +244,8 @@ function render(){
  }
  items.forEach((it,i)=>card(x,geo[i],it));
 }
-['bg','cnt','user','st','ex','lm'].forEach(id=>$(id).addEventListener('input',render));
+['bg','user','st','ex','lm'].forEach(id=>$(id).addEventListener('input',render));
 PL.forEach((_,i)=>{$('r'+i).addEventListener('input',render);$('d'+i).addEventListener('input',render);});
-$('gen').onclick=()=>{render();const c=$('cv');c.classList.add('pulse');setTimeout(()=>c.classList.remove('pulse'),700);c.scrollIntoView({behavior:'smooth',block:'nearest'});};
 $('dl').onclick=()=>{render();$('cv').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='rocket-league-ranks.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);},'image/png');};
 render();
 if(document.fonts&&document.fonts.load)document.fonts.load(`italic 800 40px "Exo 2"`).then(render).catch(()=>{});
