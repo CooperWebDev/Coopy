@@ -71,6 +71,8 @@ select:disabled{opacity:.4}
 <div id="lmp" class="panel" hidden></div>
 <label class="sw"><input type="checkbox" id="ex" role="switch"><span class="trk"></span><span class="swt">Extra modes<small>Rumble, Snowday, Hoops, Dropshot</small></span></label>
 <div id="exp" class="panel" hidden></div>
+<label class="sw"><input type="checkbox" id="tn" role="switch"><span class="trk"></span><span class="swt">Tournament<small>Competitive tournament rank</small></span></label>
+<div id="tnp" class="panel" hidden></div>
 <fieldset>
 <legend>Customize</legend>
 <div class="opts">
@@ -101,13 +103,13 @@ const IMGKEY={gc:'grand_champion',ssl:'super_sonic_legend'};
 
 const RK=[];
 FAM.forEach(f=>{ if(!f.t) RK.push({f,tier:0,label:f.n}); else for(let i=1;i<=3;i++) RK.push({f,tier:i,label:f.n+' '+ROM[i]}); });
-const PL=['1v1','2v2','3v3','Rumble','Snowday','Hoops','Dropshot','4v4','Heatseeker'];
-const SUB=['Duels','Doubles','Standard','','','','','',''];
-const DEF=[['Diamond III',3],['Grand Champion I',2],['Champion III',3],['Diamond I',2],['Champion I',2],['Diamond II',3],['Platinum III',2],['Platinum II',3],['Gold III',2]];
+const PL=['1v1','2v2','3v3','Rumble','Snowday','Hoops','Dropshot','4v4','Heatseeker','Tournament'];
+const SUB=['Duels','Doubles','Standard','','','','','','',''];
+const DEF=[['Diamond III',3],['Grand Champion I',2],['Champion III',3],['Diamond I',2],['Champion I',2],['Diamond II',3],['Platinum III',2],['Platinum II',3],['Gold III',2],['Champion II',2]];
 const $=id=>document.getElementById(id);
 
 // ---------- UI ----------
-const grpOf=i=>i<3?'pls':i<7?'exp':'lmp';
+const grpOf=i=>i<3?'pls':i<7?'exp':i<9?'lmp':'tnp';
 let opts='<option value="-1">Hidden (leave empty)</option>',last='';
 RK.forEach((r,j)=>{ if(r.f.n!==last){ if(last) opts+='</optgroup>'; opts+=`<optgroup label="${r.f.n}">`; last=r.f.n;} opts+=`<option value="${j}">${r.label}</option>`; });
 opts+='</optgroup>';
@@ -224,12 +226,12 @@ function card(x,g,item){
 // ---------- Render ----------
 function rowGeom(n,top,cw,ch,gap,solo){const tot=n*cw+(n-1)*gap,l=(1920-tot)/2;return Array.from({length:n},(_,i)=>({left:l+i*(cw+gap),top,cw,ch,solo}));}
 function render(){
- syncDiv();$('pls').hidden=!$('st').checked;$('exp').hidden=!$('ex').checked;$('lmp').hidden=!$('lm').checked;
+ syncDiv();$('pls').hidden=!$('st').checked;$('exp').hidden=!$('ex').checked;$('lmp').hidden=!$('lm').checked;$('tnp').hidden=!$('tn').checked;
  const cv=$('cv'),x=cv.getContext('2d');x.clearRect(0,0,1920,1080);
  drawBg(x,$('bg').value);
  const user=$('user').value.trim();
  const all=PL.map((pl,i)=>({pl,i,r:RK[+$('r'+i).value],div:+$('d'+i).value,on:+$('r'+i).value>=0}));
- const items=[...all.filter(a=>a.i<3&&a.on&&$('st').checked),...all.filter(a=>a.i>=7&&a.on&&$('lm').checked),...all.filter(a=>a.i>=3&&a.i<7&&a.on&&$('ex').checked)];
+ const items=[...all.filter(a=>a.i<3&&a.on&&$('st').checked),...all.filter(a=>a.i>=7&&a.i<9&&a.on&&$('lm').checked),...all.filter(a=>a.i>=3&&a.i<7&&a.on&&$('ex').checked),...all.filter(a=>a.i===9&&a.on&&$('tn').checked)];
  txt(x,'ROCKET LEAGUE',960,105,104,'#fff','#2f7bff',6);
  if(user) txt(x,user.toUpperCase(),960,228,50,'#fff','#7fb0ff',6,1400);
  const n=items.length;
@@ -244,7 +246,7 @@ function render(){
  }
  items.forEach((it,i)=>card(x,geo[i],it));
 }
-['bg','user','st','ex','lm'].forEach(id=>$(id).addEventListener('input',render));
+['bg','user','st','ex','lm','tn'].forEach(id=>$(id).addEventListener('input',render));
 PL.forEach((_,i)=>{$('r'+i).addEventListener('input',render);$('d'+i).addEventListener('input',render);});
 $('dl').onclick=()=>{render();$('cv').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='rocket-league-ranks.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);},'image/png');};
 render();
