@@ -65,6 +65,16 @@ select:disabled{opacity:.4}
 </div>
 </section>
 <aside class="panel">
+<fieldset id="lookup">
+<legend>Auto-fill from your account</legend>
+<div class="opts">
+<label>Platform<select id="plat"><option value="epic">Epic</option><option value="steam">Steam</option><option value="psn">PlayStation</option><option value="xbox">Xbox</option><option value="switch">Switch</option></select></label>
+<label>Username<input type="text" id="lu" maxlength="60" placeholder="In-game / profile name"></label>
+</div>
+<div class="actions"><button class="pri" id="fetchBtn" type="button">Fetch my ranks</button></div>
+<small id="lmsg" role="status" aria-live="polite"></small>
+<div id="pasteWrap" hidden><textarea id="paste" rows="3" placeholder="Paste rlstats.net page source here" style="width:100%"></textarea><div class="actions"><button type="button" id="pasteBtn">Use pasted page</button></div></div>
+</fieldset>
 <label class="sw"><input type="checkbox" id="st" role="switch" checked><span class="trk"></span><span class="swt">Standard modes<small>1v1, 2v2, 3v3</small></span></label>
 <div id="pls" class="panel"></div>
 <label class="sw"><input type="checkbox" id="lm" role="switch"><span class="trk"></span><span class="swt">Limited modes<small>4v4, Heatseeker</small></span></label>
@@ -246,6 +256,86 @@ function render(){
  }
  items.forEach((it,i)=>card(x,geo[i],it));
 }
+
+// ---------- Auto-fetch ranks (same data source as the Discord bot's /rlrank) ----------
+const FAMNAME={'grand champion':'Grand Champion','supersonic legend':'Supersonic Legend'};
+function applyRanks(ranks){
+ let n=0;
+ PL.forEach((p,i)=>{
+  const r=ranks[p]; if(!r) return;
+  const name=FAMNAME[r.family]||r.family.replace(/^./,c=>c.toUpperCase());
+  const j=RK.findIndex(o=>o.f.n===name&&o.tier===(r.tier||0));
+  if(j<0) return;
+  $('r'+i).value=j; if(r.tier) $('d'+i).value=Math.min(4,Math.max(1,r.div||1)); n++;
+ });
+ // turn on the mode groups that received data, hide untouched ones' ranks
+ const has=ix=>ix.some(i=>ranks[PL[i]]);
+ if(has([3,4,5,6])) $('ex').checked=true;
+ if(has([7,8])) $('lm').checked=true;
+ PL.forEach((p,i)=>{ if(!ranks[p] && i<9) $('r'+i).value='-1'; });
+ return n;
+}
+// Browser-side port of the bot's rlstats.net parser (no server needed)
+const SLUG={epic:'Epic',steam:'Steam',psn:'PS4',xbox:'XboxOne',switch:'Switch'};
+const PLKEYS=[[/1v1|duel/i,'1v1'],[/2v2.*heat/i,'Heatseeker'],[/2v2.*hoops/i,'Hoops'],[/2v2|doubles/i,'2v2'],[/3v3.*rumble/i,'Rumble'],[/3v3.*drop/i,'Dropshot'],[/3v3.*snow/i,'Snowday'],[/3v3|standard/i,'3v3'],[/4v4|quads/i,'4v4']];
+const RN={I:1,II:2,III:3,IV:4};
+const plKey=h=>{for(const [re,k] of PLKEYS) if(re.test(h)) return k;return null;};
+function parseRank(t){
+ t=t.replace(/\s+/g,' ');
+ const m=t.match(/(Grand Champion|Supersonic Legend|Unranked|Bronze|Silver|Gold|Platinum|Diamond|Champion)(?:\s+(III|II|I)\b)?/i);
+ if(!m) return null;
+ const d=t.match(/Division\s+(IV|III|II|I)\b/i);
+ return {family:m[1].toLowerCase(),tier:m[2]?RN[m[2].toUpperCase()]:0,div:d?RN[d[1].toUpperCase()]:1};
+}
+function parseProfile(html){
+ const doc=new DOMParser().parseFromString(html,'text/html'),out={};
+ const scope=doc.querySelector('#skills .block-body[data-season]')||doc;
+ scope.querySelectorAll('table').forEach(table=>{
+  const rows=[...table.querySelectorAll('tr')]; if(!rows.length) return;
+  const keys=[...rows[0].children].map(c=>plKey(c.textContent.trim()));
+  if(!keys.some(Boolean)) return;
+  keys.forEach((key,col)=>{
+   if(!key||out[key]) return;
+   let text='',alt='';
+   rows.slice(1).forEach(tr=>{const td=tr.children[col]; if(!td) return;
+    text+=' '+td.innerHTML.replace(/<img[^>]*>/gi,' ').replace(/<[^>]+>/g,' ');
+    const im=td.querySelectorAll('img'); alt+=' '+(im.length?im[im.length-1].alt:'');});
+   const r=parseRank(text)||parseRank(alt); if(r) out[key]=r;
+  });
+ });
+ return out;
+}
+// Public CORS proxies, tried in order. rlstats.net has no open API, so this is best-effort.
+const PROXIES=[u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),u=>'https://corsproxy.io/?'+encodeURIComponent(u),u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u)];
+async function getProfile(url){
+ for(const px of PROXIES){
+  try{
+   const r=await fetch(px(url),{signal:AbortSignal.timeout(15000)});
+   if(!r.ok) continue;
+   const html=await r.text();
+   if(/id=["']skills["']/.test(html)) return html;
+  }catch(e){}
+ }
+ return null;
+}
+$('fetchBtn').onclick=async()=>{
+ const u=$('lu').value.trim(),m=$('lmsg'),b=$('fetchBtn');
+ if(!u){m.textContent='Enter a username first.';return;}
+ b.disabled=true;m.textContent='Fetching ranks…';
+ const html=await getProfile('https://rlstats.net/profile/'+SLUG[$('plat').value]+'/'+encodeURIComponent(u));
+ if(!html){m.textContent="Couldn't reach rlstats.net (blocked or profile not found). Open your profile there, view page source, paste it below and click Use pasted page.";$('pasteWrap').hidden=false;b.disabled=false;return;}
+ finish(html,u);b.disabled=false;
+};
+function finish(html,u){
+ const ranks=parseProfile(html),m=$('lmsg');
+ if(!Object.keys(ranks).length){m.textContent='No ranks found. Check the spelling/platform, or the profile may be private.';return;}
+ const n=applyRanks(ranks);
+ if(!$('user').value&&u) $('user').value=u.slice(0,24);
+ m.textContent='Loaded '+n+' playlist'+(n===1?'':'s')+(u?' for '+u:'')+'.';
+ render();
+}
+$('pasteBtn').onclick=()=>finish($('paste').value,$('lu').value.trim());
+$('lu').addEventListener('keydown',e=>{if(e.key==='Enter')$('fetchBtn').click();});
 ['bg','user','st','ex','lm','tn'].forEach(id=>$(id).addEventListener('input',render));
 PL.forEach((_,i)=>{$('r'+i).addEventListener('input',render);$('d'+i).addEventListener('input',render);});
 $('dl').onclick=()=>{render();$('cv').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='rocket-league-ranks.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);},'image/png');};
